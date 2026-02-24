@@ -1,117 +1,67 @@
-import { useState, useEffect } from "react";
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, X } from "lucide-react";
+import { leaveAPI } from "../../../utils/api";
 
 const UserLeaves = () => {
   const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ employee: "", type: "Annual Leave", startDate: "", endDate: "", days: "", reason: "" });
 
   useEffect(() => {
-    // LocalStorage se leaves ka data fetch ho raha hai
-    const stored = JSON.parse(localStorage.getItem("leaves")) || [];
-    setLeaves(stored);
+    (async () => {
+      try { const res = await leaveAPI.getAll(); setLeaves(res.data); }
+      catch (err) { console.error(err); } finally { setLoading(false); }
+    })();
   }, []);
 
-  // Filter stats (logic)
-  const pending = leaves.filter(l => l.status === "Pending").length;
-  const approved = leaves.filter(l => l.status === "Approved").length;
+  const handleSubmit = async () => {
+    try { await leaveAPI.create({ ...form, status: "Pending" }); setShowForm(false); const res = await leaveAPI.getAll(); setLeaves(res.data); }
+    catch (err) { alert(err.message); }
+  };
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafa] p-4 sm:p-6 lg:p-8 font-sans overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-8">
-
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#0f2e2e]">My Leave History</h1>
-            <p className="text-gray-500 text-sm mt-1">Track your time-off requests and status</p>
-          </div>
-
-          <div className="flex gap-2">
-            <StatMini label="Pending" count={pending} color="bg-orange-500" />
-            <StatMini label="Approved" count={approved} color="bg-emerald-500" />
-          </div>
+    <div className="bg-[#f8fafc] min-h-screen p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-black text-slate-800">My Leave Requests</h1>
+          <button onClick={() => setShowForm(true)} className="bg-[#0a4d44] text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2"><Plus size={18} /> Apply Leave</button>
         </div>
 
-        {/* Leave Records Grid/List */}
-        <div className="grid grid-cols-1 gap-4">
-          {leaves.length === 0 ? (
-            <div className="py-20 bg-white rounded-[32px] border border-dashed border-gray-200 flex flex-col items-center justify-center text-center p-6 shadow-sm">
-              <div className="p-4 bg-gray-50 rounded-full mb-4 text-gray-300">
-                <Calendar size={32} />
+        {loading ? <div className="bg-white rounded-3xl p-20 text-center text-slate-400">Loading...</div> : (
+          <div className="space-y-4">
+            {leaves.length === 0 ? <div className="bg-white rounded-3xl p-20 text-center text-slate-400">No leave applications</div>
+            : leaves.map((l) => (
+              <div key={l._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div><h3 className="font-bold text-slate-800">{l.type}</h3><p className="text-sm text-slate-500 mt-1">{l.startDate?.slice(0,10)} → {l.endDate?.slice(0,10)} ({l.days} days)</p><p className="text-sm text-slate-400 mt-1 italic">"{l.reason}"</p></div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${l.status==="Approved"?"bg-emerald-100 text-emerald-600":l.status==="Rejected"?"bg-red-100 text-red-600":"bg-orange-100 text-orange-600"}`}>{l.status}</span>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-[#0f2e2e]">No Leave Records</h3>
-              <p className="text-gray-400 text-sm max-w-xs">You haven't applied for any leaves yet.</p>
+            ))}
+          </div>
+        )}
+
+        {showForm && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex justify-center items-center p-4">
+            <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden">
+              <div className="px-8 py-6 border-b flex justify-between"><h2 className="font-black text-slate-800">Apply for Leave</h2><button onClick={() => setShowForm(false)}><X size={24} className="text-slate-400" /></button></div>
+              <div className="p-8 space-y-4">
+                <div><label className="text-[10px] font-black uppercase text-slate-400">Your Name</label><input value={form.employee} onChange={e=>setForm({...form,employee:e.target.value})} className="w-full mt-1 bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl text-sm outline-none" /></div>
+                <div><label className="text-[10px] font-black uppercase text-slate-400">Leave Type</label>
+                  <select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full mt-1 bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl text-sm outline-none">
+                    <option>Annual Leave</option><option>Medical Leave</option><option>Emergency Leave</option><option>Unpaid Leave</option>
+                  </select></div>
+                {[["startDate","Start Date"],["endDate","End Date"],["days","No. of Days"],["reason","Reason"]].map(([key,label]) => (
+                  <div key={key}><label className="text-[10px] font-black uppercase text-slate-400">{label}</label><input type={key.includes("Date")?"date":"text"} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} className="w-full mt-1 bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl text-sm outline-none" /></div>
+                ))}
+              </div>
+              <div className="p-8 border-t flex gap-3"><button onClick={() => setShowForm(false)} className="flex-1 py-4 font-bold text-slate-400">Cancel</button><button onClick={handleSubmit} className="flex-[2] bg-[#0a4d44] text-white py-4 rounded-2xl font-bold">Submit</button></div>
             </div>
-          ) : (
-            leaves.map((leave, i) => (
-              <div key={i} className="bg-white rounded-[24px] sm:rounded-[32px] p-5 sm:p-6 shadow-sm border border-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-md transition-all group">
-
-                {/* Left Side: Date & Type */}
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="p-3.5 bg-gray-50 text-[#0f2e2e] rounded-2xl group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-                    <Calendar size={22} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#0f2e2e] text-sm sm:text-base">{leave.type}</h3>
-                    <p className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wider">
-                      {leave.from} <span className="mx-1">→</span> {leave.to}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Middle: Reason (Hidden on very small screens or truncated) */}
-                <div className="flex-1 px-0 sm:px-6 w-full">
-                  <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-500 italic line-clamp-1">"{leave.reason}"</p>
-                  </div>
-                </div>
-
-                {/* Right Side: Status Badge */}
-                <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                  <StatusBadge status={leave.status} />
-                  <button className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
-                    <AlertCircle size={18} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-/* ================= HELPER COMPONENTS ================= */
-
-const StatMini = ({ label, count, color }) => (
-  <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
-    <div className={`w-2 h-2 rounded-full ${color}`}></div>
-    <div className="flex flex-col">
-      <span className="text-[9px] font-black text-gray-400 uppercase leading-none">{label}</span>
-      <span className="text-sm font-bold text-[#0f2e2e]">{count}</span>
-    </div>
-  </div>
-);
-
-const StatusBadge = ({ status }) => {
-  const styles = {
-    Pending: "bg-orange-100 text-orange-600",
-    Approved: "bg-emerald-100 text-emerald-600",
-    Rejected: "bg-rose-100 text-rose-600",
-  };
-
-  const Icons = {
-    Pending: <Clock size={12} />,
-    Approved: <CheckCircle size={12} />,
-    Rejected: <XCircle size={12} />,
-  };
-
-  return (
-    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${styles[status] || styles.Pending}`}>
-      {Icons[status] || Icons.Pending}
-      {status || "Pending"}
-    </span>
-  );
-};
-
 export default UserLeaves;

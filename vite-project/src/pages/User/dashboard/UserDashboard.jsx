@@ -1,229 +1,57 @@
-import { useState, useEffect } from "react";
-import { Clock, Calendar, Briefcase, CheckCircle, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Calendar, Clock, Briefcase, CheckCircle } from "lucide-react";
+import { attendanceAPI, leaveAPI, projectAPI } from "../../../utils/api";
+import { useAuth } from "../../../context/AuthContext";
 
 const UserDashboard = () => {
-  /* ================= LOGIC ================= */
-  const [punchIn, setPunchIn] = useState(localStorage.getItem("punchIn") || "");
-  const [punchOut, setPunchOut] = useState(localStorage.getItem("punchOut") || "");
-  const [leaves, setLeaves] = useState(JSON.parse(localStorage.getItem("leaves")) || []);
-  const [projects, setProjects] = useState(JSON.parse(localStorage.getItem("projects")) || []);
+  const { user } = useAuth();
+  const [stats, setStats] = useState({ attendance: 0, leaves: 0, projects: 0, pendingLeaves: 0 });
+  const [loading, setLoading] = useState(true);
 
-  const [leaveForm, setLeaveForm] = useState({ from: "", to: "", type: "Casual Leave", reason: "" });
-  const [projectForm, setProjectForm] = useState({ name: "", status: "In Progress", update: "" });
+  useEffect(() => {
+    (async () => {
+      try {
+        const [leavesRes, projectsRes] = await Promise.all([leaveAPI.getAll(), projectAPI.getProjects()]);
+        setStats({
+          leaves: leavesRes.count || 0,
+          pendingLeaves: leavesRes.data?.filter(l => l.status === "Pending").length || 0,
+          projects: projectsRes.count || 0,
+        });
+      } catch (err) { console.error(err); }
+      finally { setLoading(false); }
+    })();
+  }, []);
 
-  const handlePunchIn = () => {
-    const time = new Date().toLocaleTimeString();
-    setPunchIn(time);
-    setPunchOut("");
-    localStorage.setItem("punchIn", time);
-    localStorage.removeItem("punchOut");
-  };
-
-  const handlePunchOut = () => {
-    const time = new Date().toLocaleTimeString();
-    setPunchOut(time);
-    localStorage.setItem("punchOut", time);
-  };
-
-  const applyLeave = () => {
-    if (!leaveForm.from || !leaveForm.to) return alert("Please select dates");
-    const updated = [...leaves, { ...leaveForm, status: "Pending", id: Date.now() }];
-    setLeaves(updated);
-    localStorage.setItem("leaves", JSON.stringify(updated));
-    setLeaveForm({ from: "", to: "", type: "Casual Leave", reason: "" });
-  };
-
-  const updateProject = () => {
-    if (!projectForm.name) return alert("Please enter project name");
-    const updated = [...projects, { ...projectForm, id: Date.now() }];
-    setProjects(updated);
-    localStorage.setItem("projects", JSON.stringify(updated));
-    setProjectForm({ name: "", status: "In Progress", update: "" });
-  };
+  const cards = [
+    { label: "Leave Balance", value: "12 days", icon: Calendar, color: "bg-blue-100 text-blue-700" },
+    { label: "Pending Leaves", value: stats.pendingLeaves, icon: Clock, color: "bg-orange-100 text-orange-700" },
+    { label: "My Projects", value: stats.projects, icon: Briefcase, color: "bg-purple-100 text-purple-700" },
+    { label: "Tasks Done", value: "0", icon: CheckCircle, color: "bg-emerald-100 text-emerald-700" },
+  ];
 
   return (
-    <div className="min-h-screen w-full bg-[#f8fafa] p-4 sm:p-6 lg:p-8 font-sans overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-
-        {/* HEADER */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0f2e2e] tracking-tight">User Dashboard</h1>
-          <p className="text-gray-500 text-xs sm:text-sm font-medium">Welcome back! Here's your workspace overview.</p>
+    <div className="bg-[#f8fafc] min-h-screen p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-black text-slate-800">Welcome back, {user?.name || "User"}! 👋</h1>
+          <p className="text-slate-500 text-sm font-medium mt-1">Here's your personal overview</p>
         </div>
 
-        {/* SUMMARY STATS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <SummaryCard
-            title="Attendance Status"
-            value={punchIn ? "Present" : "Not Marked"}
-            subText={punchIn ? `Punch In: ${punchIn}` : "Waiting for entry"}
-            icon={<CheckCircle className={punchIn ? "text-emerald-500" : "text-gray-300"} size={20} />}
-          />
-          <SummaryCard
-            title="Leave Requests"
-            value={leaves.length}
-            subText="Pending for approval"
-            icon={<Calendar className="text-blue-500" size={20} />}
-          />
-          <SummaryCard
-            title="Project Tasks"
-            value={projects.length}
-            subText="Active contributions"
-            icon={<Briefcase className="text-purple-500" size={20} />}
-          />
-        </div>
-
-        {/* MAIN LAYOUT - Fixes the Overlap issue */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 items-start">
-
-          {/* LEFT COLUMN: 4 Units Wide */}
-          <div className="w-full lg:col-span-4 flex flex-col gap-6">
-            <Section title="Daily Punch" icon={<Clock size={18} />}>
-              <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handlePunchIn}
-                    className="bg-[#0f2e2e] text-white py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-md"
-                  >
-                    In
-                  </button>
-                  <button
-                    onClick={handlePunchOut}
-                    disabled={!punchIn}
-                    className={`py-3 rounded-2xl font-bold text-xs uppercase tracking-widest border-2 transition-all active:scale-95 ${punchIn ? 'border-[#0f2e2e] text-[#0f2e2e]' : 'border-gray-200 text-gray-300 cursor-not-allowed'}`}
-                  >
-                    Out
-                  </button>
-                </div>
-
-                <div className="bg-gray-50 rounded-2xl p-4 border border-dashed border-gray-200 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Punch In Time</span>
-                    <span className="text-xs font-bold text-[#0f2e2e]">{punchIn || '--:--'}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Punch Out Time</span>
-                    <span className="text-xs font-bold text-[#0f2e2e]">{punchOut || '--:--'}</span>
-                  </div>
-                </div>
-              </div>
-            </Section>
-
-            {/* Dark Brand Card */}
-            <div className="w-full bg-[#0f2e2e] rounded-[32px] p-8 text-white relative overflow-hidden flex flex-col justify-between min-h-[200px] shadow-xl">
-              <div className="relative z-10">
-                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[3px] mb-2">Workspace</p>
-                <h2 className="text-2xl font-bold leading-tight">Focus on your <br /> goals today.</h2>
-              </div>
-              <p className="text-[10px] text-gray-400 relative z-10">All updates are synced in real-time.</p>
-              <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-emerald-500 rounded-full blur-[60px] opacity-20"></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {cards.map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center mb-4`}><Icon size={24} /></div>
+              <p className="text-3xl font-black text-slate-800">{loading ? "..." : value}</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">{label}</p>
             </div>
-          </div>
+          ))}
+        </div>
 
-          {/* RIGHT COLUMN: 8 Units Wide */}
-          <div className="w-full lg:col-span-8 flex flex-col gap-6">
-
-            {/* APPLY LEAVE SECTION */}
-            <Section title="Request Leave" icon={<Calendar size={18} />}>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-                <InputGroup label="From Date" type="date" value={leaveForm.from} onChange={(e) => setLeaveForm({ ...leaveForm, from: e.target.value })} />
-                <InputGroup label="To Date" type="date" value={leaveForm.to} onChange={(e) => setLeaveForm({ ...leaveForm, to: e.target.value })} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Leave Type</label>
-                  <select
-                    value={leaveForm.type}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-100 p-3.5 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all cursor-pointer"
-                  >
-                    <option>Casual Leave</option>
-                    <option>Sick Leave</option>
-                  </select>
-                </div>
-              </div>
-              <textarea
-                placeholder="Briefly explain the reason for leave..."
-                value={leaveForm.reason}
-                onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl text-sm mt-4 h-24 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all resize-none"
-              />
-              <button
-                onClick={applyLeave}
-                className="mt-4 bg-[#0f2e2e] text-white px-8 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg hover:bg-black transition-all w-full sm:w-auto self-start"
-              >
-                Submit Request
-              </button>
-            </Section>
-
-            {/* PROJECT UPDATE SECTION */}
-            <Section title="Update Work Progress" icon={<Briefcase size={18} />}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
-                <InputGroup label="Project Name" placeholder="e.g. Website Redesign" value={projectForm.name} onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Current Status</label>
-                  <select
-                    value={projectForm.status}
-                    onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-100 p-3.5 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all cursor-pointer"
-                  >
-                    <option>In Progress</option>
-                    <option>Completed</option>
-                  </select>
-                </div>
-              </div>
-              <textarea
-                placeholder="What exactly have you achieved today?"
-                value={projectForm.update}
-                onChange={(e) => setProjectForm({ ...projectForm, update: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl text-sm mt-4 h-24 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all resize-none"
-              />
-              <button
-                onClick={updateProject}
-                className="mt-4 bg-[#0f2e2e] text-white px-8 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg hover:bg-black transition-all w-full sm:w-auto self-start"
-              >
-                Sync Progress
-              </button>
-            </Section>
-          </div>
-
+        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
+          <p className="text-slate-500 font-medium">Your attendance, leaves, and project details are updated in real-time.</p>
         </div>
       </div>
     </div>
   );
 };
-
-/* ================= HELPER COMPONENTS (STYLIZED) ================= */
-
-const Section = ({ title, icon, children }) => (
-  <div className="bg-white p-6 sm:p-8 rounded-[32px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-white/50 w-full overflow-hidden">
-    <div className="flex items-center gap-3 mb-4">
-      <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">{icon}</div>
-      <h2 className="text-lg font-bold text-[#0f2e2e]">{title}</h2>
-    </div>
-    {children}
-  </div>
-);
-
-const SummaryCard = ({ title, value, subText, icon }) => (
-  <div className="bg-white rounded-[32px] border border-white/60 p-6 shadow-sm flex items-center justify-between group hover:shadow-md transition-all duration-300">
-    <div className="space-y-1">
-      <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">{title}</p>
-      <h2 className="text-xl font-black text-[#0f2e2e]">{value}</h2>
-      <p className="text-[10px] font-medium text-gray-500">{subText}</p>
-    </div>
-    <div className="p-3 bg-gray-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">
-      {icon}
-    </div>
-  </div>
-);
-
-const InputGroup = ({ label, ...props }) => (
-  <div className="flex flex-col gap-1.5 w-full">
-    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 tracking-wider">{label}</label>
-    <input
-      {...props}
-      className="w-full bg-gray-50 border border-gray-100 p-3.5 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all placeholder:text-gray-300"
-    />
-  </div>
-);
-
 export default UserDashboard;
