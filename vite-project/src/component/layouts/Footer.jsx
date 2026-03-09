@@ -1,84 +1,64 @@
-import React from "react";
-import { Facebook, Twitter, Instagram, Mail, MapPin, Phone, Heart } from "lucide-react";
+import { Mail, MapPin, Phone, Heart } from "lucide-react";
 
 const Footer = ({ isSidebarOpen }) => {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer
-      className={`bg-[#5b8db6] text-white py-10 px-6 sm:px-12 transition-all duration-300 relative overflow-hidden
+      className={`bg-[#0f2e2e] text-white py-10 px-6 sm:px-12 transition-all duration-300 relative overflow-hidden
         ${isSidebarOpen ? "md:ml-[260px]" : "ml-0"}`}
     >
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full -ml-10 -mb-10 blur-2xl" />
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 mb-10">
 
-          
+          {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-md">
-                <span className="font-black text-xl italic">b.</span>
+              <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="font-black text-lg">B</span>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">bdtask.</h2>
+              <h2 className="text-xl font-black tracking-tight">Bizzfly</h2>
             </div>
-            <p className="text-blue-50/80 text-sm leading-relaxed max-w-xs">
-              Bdtask UI Kit. Carefully crafted UI components for modern
-              experience design. 100+ components and sample pages will help
-              you to create any project efficiently.
+            <p className="text-white/60 text-sm leading-relaxed max-w-xs">
+              Streamline your workforce with smarter tools. Manage your team, track performance, and grow your business — effortlessly.
             </p>
           </div>
 
-          
+          {/* Contact */}
           <div className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[3px] text-blue-100/60">Contact Us</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[3px] text-white/40">Contact</h3>
             <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-sm text-blue-50 hover:text-white transition-colors cursor-pointer">
-                <Mail size={16} className="text-blue-200" />
-                <span>hello@bdtask.co</span>
+              <li className="flex items-center gap-3 text-sm text-white/70 hover:text-white transition-colors cursor-pointer">
+                <Mail size={15} className="text-emerald-400 shrink-0" />
+                <span>support@bizzfly.com</span>
               </li>
-              <li className="flex items-start gap-3 text-sm text-blue-50">
-                <MapPin size={16} className="text-blue-200 mt-1" />
-                <span>24 Atlantic Ave. Brooklyn,<br /> NY 11201 Bdtask Inc</span>
+              <li className="flex items-start gap-3 text-sm text-white/70">
+                <MapPin size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+                <span>404 Business Park, Andheri West,<br />Mumbai, India 400053</span>
               </li>
-              <li className="flex items-center gap-3 text-sm text-blue-50">
-                <Phone size={16} className="text-blue-200" />
-                <span>+34 875 328 58 47</span>
+              <li className="flex items-center gap-3 text-sm text-white/70 hover:text-white transition-colors">
+                <Phone size={15} className="text-emerald-400 shrink-0" />
+                <span>+91 98765 43210</span>
               </li>
             </ul>
           </div>
-
-         
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[3px] text-blue-100/60">Follow Us</h3>
-            <p className="text-sm text-blue-50/80">Yes, we are social</p>
-            <div className="flex gap-4">
-              <SocialIcon icon={<Facebook size={18} />} />
-              <SocialIcon icon={<Twitter size={18} />} />
-              <SocialIcon icon={<Instagram size={18} />} />
-            </div>
-          </div>
         </div>
 
-        
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-medium text-blue-100/70">
-          <p>© {currentYear} Bdtask Inc. All rights reserved.</p>
-          <div className="flex items-center gap-1 hover:text-white transition-all cursor-pointer">
+        {/* Bottom */}
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-medium text-white/40">
+          <p>© {currentYear} Bizzfly. All rights reserved.</p>
+          <div className="flex items-center gap-1.5">
             <span>Made with</span>
-            <Heart size={14} className="text-rose-400 fill-rose-400" />
-            <span>for better web</span>
+            <Heart size={12} className="text-rose-400 fill-rose-400" />
+            <span>in India</span>
           </div>
         </div>
       </div>
     </footer>
   );
 };
-
-
-const SocialIcon = ({ icon }) => (
-  <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-[#5b8db6] transition-all duration-300 backdrop-blur-sm border border-white/5">
-    {icon}
-  </button>
-);
 
 export default Footer;

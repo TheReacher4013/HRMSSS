@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pencil, Trash2, Plus, Calendar as CalendarIcon, Settings, CheckCircle, XCircle, X } from "lucide-react";
+import { Pencil, Trash2, Plus, Calendar as CalendarIcon, X } from "lucide-react";
 
 const daysList = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -25,52 +25,29 @@ const WeeklyHoliday = () => {
     { id: 2, employee: "Amy Zamora", type: "Medical Leave", days: 1, status: "Pending" },
   ]);
 
-  const handleEditHoliday = (item) => {
-    setEditingHoliday(item);
-    setSelectedDays(item.days);
-  };
-
-  const handleDayToggle = (day) => {
-    setSelectedDays((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
-  };
-
-  const handleUpdateHoliday = () => {
-    setHolidays(prev => prev.map(item => item.id === editingHoliday.id ? { ...item, days: selectedDays } : item));
-    setEditingHoliday(null);
-  };
-
-  const handleSaveLeave = () => {
-    if (editLeave) {
-      setLeaveTypes(prev => prev.map(item => item.id === editLeave.id ? { ...leaveForm, id: item.id } : item));
-    } else {
-      setLeaveTypes(prev => [...prev, { id: Date.now(), ...leaveForm }]);
-    }
-    setShowLeaveModal(false);
-  };
-
-  const handleStatusChange = (id, status) => {
-    setLeaveRequests(prev => prev.map(item => item.id === id ? { ...item, status } : item));
-  };
+  const handleEditHoliday = (item) => { setEditingHoliday(item); setSelectedDays(item.days); };
+  const handleDayToggle = (day) => setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+  const handleUpdateHoliday = () => { setHolidays(prev => prev.map(item => item.id === editingHoliday.id ? { ...item, days: selectedDays } : item)); setEditingHoliday(null); };
+  const handleSaveLeave = () => { if (editLeave) { setLeaveTypes(prev => prev.map(item => item.id === editLeave.id ? { ...leaveForm, id: item.id } : item)); } else { setLeaveTypes(prev => [...prev, { id: Date.now(), ...leaveForm }]); } setShowLeaveModal(false); };
+  const handleStatusChange = (id, status) => setLeaveRequests(prev => prev.map(item => item.id === id ? { ...item, status } : item));
 
   return (
     <div className="bg-[#f8fafc] min-h-screen p-4 md:p-8 pt-24">
       <div className="max-w-5xl mx-auto">
 
+        {/* Tabs */}
         <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur p-2 rounded-[2rem] border border-slate-100 mb-8 inline-flex shadow-sm">
           {["weekly", "leaveType", "leaveApproval"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-[1.5rem] text-sm font-black transition-all ${activeTab === tab ? "bg-[#0a4d44] text-white shadow-md shadow-emerald-900/10 scale-105" : "text-slate-400 hover:text-slate-600"
-                }`}
-            >
-              {tab === 'weekly' ? 'Weekly Off' : tab === 'leaveType' ? 'Policy Types' : 'Approvals'}
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`px-4 sm:px-6 py-3 rounded-[1.5rem] text-sm font-black transition-all ${activeTab === tab ? "bg-[#0a4d44] text-white shadow-md shadow-emerald-900/10 scale-105" : "text-slate-400 hover:text-slate-600"}`}>
+              {tab === "weekly" ? "Weekly Off" : tab === "leaveType" ? "Policy Types" : "Approvals"}
             </button>
           ))}
         </div>
 
+        {/* Weekly Off Tab */}
         {activeTab === "weekly" && (
-          <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
+          <div className="bg-white p-4 sm:p-8 rounded-[3rem] shadow-sm border border-slate-100">
             <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><CalendarIcon size={20} /> Office Holidays</h2>
             <div className="space-y-6">
               {holidays.map((item) => (
@@ -80,16 +57,20 @@ const WeeklyHoliday = () => {
                       <span key={day} className="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 shadow-sm">{day}</span>
                     ))}
                   </div>
-                  <button onClick={() => handleEditHoliday(item)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100"><Pencil size={14} /> Edit Days</button>
+                  <button onClick={() => handleEditHoliday(item)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100">
+                    <Pencil size={14} /> Edit Days
+                  </button>
                 </div>
               ))}
-
               {editingHoliday && (
-                <div className="mt-8 pt-8 border-t border-slate-100 animate-in slide-in-from-top duration-300">
+                <div className="mt-8 pt-8 border-t border-slate-100">
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-4 tracking-widest">Select Weekend Days</p>
                   <div className="flex flex-wrap gap-3 mb-8">
                     {daysList.map((day) => (
-                      <button key={day} onClick={() => handleDayToggle(day)} className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all border ${selectedDays.includes(day) ? "bg-[#0a4d44] border-emerald-900 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:border-slate-300"}`}>{day}</button>
+                      <button key={day} onClick={() => handleDayToggle(day)}
+                        className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all border ${selectedDays.includes(day) ? "bg-[#0a4d44] border-emerald-900 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:border-slate-300"}`}>
+                        {day}
+                      </button>
                     ))}
                   </div>
                   <button onClick={handleUpdateHoliday} className="bg-slate-800 text-white px-8 py-3 rounded-2xl font-bold text-sm">Save Changes</button>
@@ -99,11 +80,17 @@ const WeeklyHoliday = () => {
           </div>
         )}
 
+        {/* Policy Types Tab */}
         {activeTab === "leaveType" && (
-          <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
-            <div className="flex justify-between items-center mb-8">
+          <div className="bg-white p-4 sm:p-8 rounded-[3rem] shadow-sm border border-slate-100">
+            {/* ✅ Fixed: flex-wrap so button wraps on 320px */}
+            <div className="flex flex-wrap gap-3 justify-between items-center mb-8">
               <h2 className="text-xl font-black text-slate-800">Leave Policies</h2>
-              <button onClick={() => { setEditLeave(null); setLeaveForm({ name: "", code: "", days: "" }); setShowLeaveModal(true); }} className="bg-[#0a4d44] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2"><Plus size={16} /> New Policy</button>
+              <button
+                onClick={() => { setEditLeave(null); setLeaveForm({ name: "", code: "", days: "" }); setShowLeaveModal(true); }}
+                className="bg-[#0a4d44] text-white px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 shrink-0">
+                <Plus size={14} /> New Policy
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {leaveTypes.map((item) => (
@@ -123,8 +110,9 @@ const WeeklyHoliday = () => {
           </div>
         )}
 
+        {/* Approvals Tab */}
         {activeTab === "leaveApproval" && (
-          <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
+          <div className="bg-white p-4 sm:p-8 rounded-[3rem] shadow-sm border border-slate-100">
             <h2 className="text-xl font-black text-slate-800 mb-8">Pending Approvals</h2>
             <div className="space-y-4">
               {leaveRequests.map((item) => (
@@ -146,10 +134,14 @@ const WeeklyHoliday = () => {
           </div>
         )}
 
+        {/* New/Edit Policy Modal */}
         {showLeaveModal && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9999] flex justify-center items-center p-4">
             <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-2xl">
-              <h2 className="text-xl font-black text-slate-800 mb-6">{editLeave ? "Edit Policy" : "New Policy"}</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-black text-slate-800">{editLeave ? "Edit Policy" : "New Policy"}</h2>
+                <button onClick={() => setShowLeaveModal(false)} className="p-1.5 hover:bg-slate-100 rounded-xl"><X size={18} className="text-slate-400" /></button>
+              </div>
               <div className="space-y-4 mb-8">
                 <input placeholder="Policy Name" value={leaveForm.name} onChange={(e) => setLeaveForm({ ...leaveForm, name: e.target.value })} className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl text-sm outline-none focus:ring-4 ring-indigo-50" />
                 <div className="grid grid-cols-2 gap-4">
@@ -165,8 +157,9 @@ const WeeklyHoliday = () => {
           </div>
         )}
 
+        {/* Delete Confirm Modal */}
         {deleteLeaveId && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex justify-center items-center p-4 font-sans">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex justify-center items-center p-4">
             <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 text-center shadow-2xl">
               <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Trash2 size={40} /></div>
               <h2 className="text-xl font-black text-slate-800 mb-2">Delete Policy?</h2>
@@ -178,6 +171,7 @@ const WeeklyHoliday = () => {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
