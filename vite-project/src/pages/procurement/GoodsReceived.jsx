@@ -1,3 +1,4 @@
+import { Type } from "lucide-react";
 import DataTable from "../../component/DataTable";
 
 export default function GoodsReceived() {
@@ -8,7 +9,7 @@ export default function GoodsReceived() {
             columns={[
                 { key: "gr", label: "GR no" },
                 { key: "vendor", label: "Vendor" },
-                { key: "date", label: "Date" },
+                { key: "date", label: "Date", type:"date" },
                 { key: "total", label: "Total" },
             ]}
             data={[

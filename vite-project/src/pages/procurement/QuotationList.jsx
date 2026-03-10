@@ -9,7 +9,7 @@ export default function Quotation() {
                 { key: "quote", label: "Quotation" },
                 { key: "company", label: "Company" },
                 { key: "pin", label: "Pin" },
-                { key: "date", label: "Date" },
+                { key: "date", label: "Date", type: "date" },
             ]}
             data={[
                 { quote: "QT-00026", company: "REGIONAL", pin: "4132131", date: "2025-12-18" },

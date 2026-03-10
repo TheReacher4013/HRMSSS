@@ -8,7 +8,7 @@ export default function Reports() {
             columns={[
                 { key: "title", label: "Report title" },
                 { key: "type", label: "Type" },
-                { key: "date", label: "Date" },
+                { key: "date", label: "Date", type: "date" },
             ]}
             data={[
                 { title: "Procurement Summary", type: "Monthly", date: "2026-02-10" },

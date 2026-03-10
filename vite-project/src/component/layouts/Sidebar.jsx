@@ -127,7 +127,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <SubMenu to="/procurement/units" label="Units" />
           </Dropdown>
 
-          <Dropdown label="Project Management" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
+          <Dropdown label="Project" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
             <SubMenu to="/project/client" label="Client" />
             <SubMenu to="/project/project" label="Project" />
             <SubMenu to="/project/tasks" label="Manage Tasks" />
@@ -144,7 +144,6 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           <Dropdown label="Reports" icon={<FolderKanban size={18} />} open={reportsOpen} setOpen={setReportsOpen}>
             <SubMenu to="/reports/attendance" label="Attendance Report" />
-            <SubMenu to="/reports/leave" label="Leave Report" />
             <SubMenu to="/reports/payroll" label="Payroll Report" />
             <SubMenu to="/reports/adhoc" label="Adhoc Report" />
           </Dropdown>

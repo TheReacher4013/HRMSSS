@@ -8,7 +8,7 @@ export default function Request() {
             columns={[
                 { key: "person", label: "Requesting person" },
                 { key: "dept", label: "Department" },
-                { key: "date", label: "Date" },
+                { key: "date", label: "Date", type: "date" },
                 { key: "status", label: "Quote status" },
             ]}
             data={[
