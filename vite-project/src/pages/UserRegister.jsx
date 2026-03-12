@@ -1,182 +1,125 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle, Copy, User, Mail, Phone, Lock } from "lucide-react";
-import { authAPI } from "../services/api";
+import { Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const UserRegister = () => {
     const navigate = useNavigate();
-    const [showPassword, setShowPassword] = useState(false);
+    const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+    const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState(null); // { employeeId, name }
-    const [copied, setCopied] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "", email: "", mobile: "", password: "", confirmPassword: ""
-    });
+    const [success, setSuccess] = useState(false);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const getStrength = () => {
-        const p = formData.password;
-        if (p.length > 8 && /[A-Z]/.test(p) && /[0-9]/.test(p)) return { label: "Strong", color: "bg-emerald-500", text: "text-emerald-400" };
-        if (p.length > 5) return { label: "Medium", color: "bg-yellow-500", text: "text-yellow-400" };
-        if (p.length > 0) return { label: "Weak", color: "bg-red-500", text: "text-red-400" };
+    const strength = () => {
+        const l = form.password.length;
+        if (l > 8) return { label: "Strong", color: "text-emerald-400", w: "w-full", bg: "bg-emerald-500" };
+        if (l > 5) return { label: "Medium", color: "text-yellow-400", w: "w-2/3", bg: "bg-yellow-400" };
+        if (l > 0) return { label: "Weak", color: "text-red-400", w: "w-1/3", bg: "bg-red-500" };
         return null;
     };
-
-    const strength = getStrength();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        if (formData.password !== formData.confirmPassword) {
-            setError("Passwords do not match"); return;
-        }
-        if (formData.mobile && !/^\d{7,15}$/.test(formData.mobile)) {
-            setError("Enter a valid mobile number"); return;
-        }
+        if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
+        if (form.password.length < 6) { setError("Password must be at least 6 chars."); return; }
         setLoading(true);
         try {
-            const res = await authAPI.register({
-                name: formData.name,
-                email: formData.email,
-                mobile: formData.mobile,
-                password: formData.password,
-                role: "user"
+            const res = await fetch(`${BASE}/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: form.name.trim(), email: form.email.trim().toLowerCase(), password: form.password, role: "user" }),
             });
-            setSuccess({ employeeId: res.employeeId, name: formData.name });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Registration failed.");
+            setSuccess(true);
+            setTimeout(() => navigate("/login"), 2000);
         } catch (err) {
-            setError(err.message || "Registration failed");
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const copyId = () => {
-        navigator.clipboard.writeText(success.employeeId);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    const s = strength();
 
-    // ── SUCCESS SCREEN ──
-    if (success) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#0f172a] to-black px-4">
-                <div className="bg-[#111] border border-gray-800 p-10 rounded-2xl w-full max-w-md shadow-2xl text-white text-center">
-                    <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle size={32} className="text-emerald-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold mb-1">Account Created! 🎉</h2>
-                    <p className="text-gray-400 text-sm mb-8">Welcome, <strong className="text-white">{success.name}</strong></p>
-
-                    <div className="bg-[#1a1a1a] border border-emerald-500/30 rounded-2xl p-6 mb-8">
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Your Employee ID</p>
-                        <p className="text-3xl font-black text-emerald-400 tracking-widest mb-3">{success.employeeId}</p>
-                        <button onClick={copyId}
-                            className="flex items-center gap-2 mx-auto text-xs text-gray-400 hover:text-emerald-400 transition">
-                            <Copy size={14} />
-                            {copied ? "Copied!" : "Copy ID"}
-                        </button>
-                    </div>
-
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 mb-6 text-left">
-                        <p className="text-amber-400 text-xs font-bold mb-1">⚠️ Save this ID!</p>
-                        <p className="text-gray-400 text-xs">Please note down your Employee ID. You may need it for HR purposes.</p>
-                    </div>
-
-                    <button onClick={() => navigate("/login")}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition">
-                        Go to Login →
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── REGISTRATION FORM ──
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#0f172a] to-black px-4 py-8">
-            <div className="bg-[#111] border border-gray-800 p-10 rounded-2xl w-full max-w-md shadow-2xl text-white">
-                <h2 className="text-3xl font-bold mb-1">Create Account</h2>
-                <p className="text-gray-400 mb-8 text-sm">Join us and start your journey 🚀</p>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-[#0f172a] to-black px-4">
+            <div className="bg-[#111] border border-gray-800 p-10 rounded-[2rem] w-full max-w-md shadow-2xl text-white">
+                <div className="mb-8">
+                    <h2 className="text-3xl font-black mb-1">Create Account</h2>
+                    <p className="text-gray-500 text-sm">Register and access your workspace</p>
+                </div>
 
-                {error && (
-                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs px-4 py-3 rounded-xl mb-4">
-                        {error}
+                {success ? (
+                    <div className="flex flex-col items-center gap-4 py-8 text-center">
+                        <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                            <CheckCircle className="text-emerald-400" size={36} />
+                        </div>
+                        <h3 className="text-xl font-black text-emerald-400">Registration Successful!</h3>
+                        <p className="text-gray-400 text-sm">Redirecting to login…</p>
                     </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-bold">
+                                <AlertCircle size={14} />{error}
+                            </div>
+                        )}
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest block mb-1.5">Full Name</label>
+                            <input type="text" name="name" placeholder="Your full name" value={form.name} onChange={handleChange} required
+                                className="w-full p-3.5 rounded-2xl bg-[#1a1a1a] border border-gray-800 focus:border-emerald-500/60 outline-none transition text-sm placeholder:text-gray-700" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest block mb-1.5">Email Address</label>
+                            <input type="email" name="email" placeholder="name@example.com" value={form.email} onChange={handleChange} required
+                                className="w-full p-3.5 rounded-2xl bg-[#1a1a1a] border border-gray-800 focus:border-emerald-500/60 outline-none transition text-sm placeholder:text-gray-700" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest block mb-1.5">Password</label>
+                            <div className="relative">
+                                <input type={showPw ? "text" : "password"} name="password" placeholder="Min. 6 characters" value={form.password} onChange={handleChange} required
+                                    className="w-full p-3.5 rounded-2xl bg-[#1a1a1a] border border-gray-800 focus:border-emerald-500/60 outline-none transition text-sm placeholder:text-gray-700 pr-12" />
+                                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400">
+                                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                            {s && (
+                                <div className="mt-2">
+                                    <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full transition-all ${s.w} ${s.bg}`} />
+                                    </div>
+                                    <p className={`text-[10px] font-bold mt-1 ${s.color}`}>Strength: {s.label}</p>
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase text-gray-600 tracking-widest block mb-1.5">Confirm Password</label>
+                            <input type="password" name="confirm" placeholder="Re-enter password" value={form.confirm} onChange={handleChange} required
+                                className={`w-full p-3.5 rounded-2xl bg-[#1a1a1a] border outline-none transition text-sm placeholder:text-gray-700
+                                    ${form.confirm && form.confirm !== form.password ? "border-red-500/50" : "border-gray-800 focus:border-emerald-500/60"}`} />
+                            {form.confirm && form.confirm !== form.password && (
+                                <p className="text-[10px] text-red-400 font-bold mt-1">Passwords don't match</p>
+                            )}
+                        </div>
+                        <button type="submit" disabled={loading}
+                            className="w-full bg-white text-black font-black py-4 rounded-2xl mt-2 hover:bg-emerald-400 transition-all text-xs uppercase tracking-widest disabled:opacity-60 flex items-center justify-center gap-2">
+                            {loading ? <><Loader2 size={15} className="animate-spin" />Creating Account…</> : "Create Account"}
+                        </button>
+                    </form>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Name */}
-                    <div className="relative">
-                        <User size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                        <input type="text" name="name" placeholder="Full Name" required
-                            value={formData.name} onChange={handleChange}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl bg-[#1a1a1a] border border-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition text-sm" />
-                    </div>
-
-                    {/* Email */}
-                    <div className="relative">
-                        <Mail size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                        <input type="email" name="email" placeholder="Email Address" required
-                            value={formData.email} onChange={handleChange}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl bg-[#1a1a1a] border border-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition text-sm" />
-                    </div>
-
-                    {/* Mobile */}
-                    <div className="relative">
-                        <Phone size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                        <input type="tel" name="mobile" placeholder="Contact Number" required
-                            value={formData.mobile} onChange={handleChange}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl bg-[#1a1a1a] border border-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition text-sm" />
-                    </div>
-
-                    {/* Password */}
-                    <div className="relative">
-                        <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                        <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" required
-                            value={formData.password} onChange={handleChange}
-                            className="w-full pl-9 pr-10 py-3 rounded-xl bg-[#1a1a1a] border border-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition text-sm" />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-3.5 text-gray-400 hover:text-white">
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                    </div>
-
-                    {/* Password strength */}
-                    {strength && (
-                        <div className="flex items-center gap-2 ml-1">
-                            <div className="flex gap-1">
-                                {["Weak", "Medium", "Strong"].map((lvl, i) => (
-                                    <div key={lvl} className={`h-1 w-8 rounded-full transition-all ${(strength.label === "Weak" && i === 0) ||
-                                            (strength.label === "Medium" && i <= 1) ||
-                                            (strength.label === "Strong")
-                                            ? strength.color : "bg-gray-700"
-                                        }`} />
-                                ))}
-                            </div>
-                            <span className={`text-xs font-bold ${strength.text}`}>{strength.label}</span>
-                        </div>
-                    )}
-
-                    {/* Confirm Password */}
-                    <div className="relative">
-                        <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
-                        <input type="password" name="confirmPassword" placeholder="Confirm Password" required
-                            value={formData.confirmPassword} onChange={handleChange}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl bg-[#1a1a1a] border border-gray-700 focus:border-emerald-500 outline-none transition text-sm" />
-                    </div>
-
-                    <button type="submit" disabled={loading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed">
-                        {loading ? "Creating Account..." : "Create Account →"}
-                    </button>
-                </form>
-
-                <p className="text-gray-400 text-sm mt-6 text-center">
-                    Already have an account?{" "}
-                    <span onClick={() => navigate("/login")} className="text-emerald-400 cursor-pointer font-bold">Login</span>
-                </p>
+                {!success && (
+                    <p className="text-gray-600 text-xs mt-6 text-center">
+                        Already have an account?{" "}
+                        <span onClick={() => navigate("/login")} className="text-emerald-400 cursor-pointer hover:underline font-bold">Login Here</span>
+                    </p>
+                )}
             </div>
         </div>
     );

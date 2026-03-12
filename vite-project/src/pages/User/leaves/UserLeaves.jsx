@@ -173,4 +173,3 @@ const UserLeaves = () => {
 };
 
 export default UserLeaves;
-

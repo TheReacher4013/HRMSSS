@@ -1,185 +1,240 @@
 import { useState, useEffect } from "react";
-import { Briefcase, Loader2, Calendar, CheckCircle2, Clock, AlertCircle, ListTodo } from "lucide-react";
+import { Briefcase, CheckCircle2, Clock, ListTodo, AlertCircle, Loader2, Calendar, Users, IndianRupee, ChevronDown, ChevronUp } from "lucide-react";
 import { projectAPI } from "../../../services/api";
 
-const statusColor = (s) => ({
-  "Completed": "bg-emerald-100 text-emerald-700",
+const STATUS_COLORS = {
+  "Not Started": "bg-slate-100 text-slate-500",
   "In Progress": "bg-blue-100 text-blue-700",
-  "On Hold": "bg-orange-100 text-orange-600",
+  "Completed": "bg-emerald-100 text-emerald-700",
+  "On Hold": "bg-amber-100 text-amber-700",
   "Cancelled": "bg-red-100 text-red-600",
-  "Not Started": "bg-gray-100 text-gray-600",
-  "Done": "bg-emerald-100 text-emerald-700",
-  "To Do": "bg-gray-100 text-gray-600",
-  "Review": "bg-purple-100 text-purple-700",
-}[s] || "bg-gray-100 text-gray-600");
+};
+const PRIORITY_COLORS = { Low: "text-gray-400", Medium: "text-amber-500", High: "text-red-500" };
 
-const priorityColor = (p) => ({
-  "High": "bg-red-50 text-red-600 border-red-100",
-  "Medium": "bg-orange-50 text-orange-600 border-orange-100",
-  "Low": "bg-green-50 text-green-600 border-green-100",
-}[p] || "bg-gray-50 text-gray-600 border-gray-100");
+const TASK_STATUS_COLORS = {
+  "To Do": "bg-slate-100 text-slate-600",
+  "In Progress": "bg-blue-50 text-blue-700",
+  "Review": "bg-purple-50 text-purple-700",
+  "Done": "bg-emerald-50 text-emerald-700",
+};
 
-const UserProjects = () => {
+export default function UserProjects() {
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("projects");
+  const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState({});
+
+  // Get current user info from localStorage
+  const user = (() => { try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; } })();
 
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const [projRes, taskRes] = await Promise.all([
-          projectAPI.getAll(),
-          projectAPI.getTasks(),
-        ]);
-        setProjects(projRes.data);
-        setTasks(taskRes.data);
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
-    };
-    fetchAll();
+    Promise.all([projectAPI.getAll(), projectAPI.getTasks()])
+      .then(([p, t]) => { setProjects(p.data || []); setTasks(t.data || []); })
+      .catch(() => setError("Failed to load projects."))
+      .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <div className="min-h-screen w-full bg-[#f8fafa] p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+  // Get tasks for a specific project
+  const tasksForProject = (projectId) => tasks.filter(t => {
+    const pid = t.project?._id || t.project;
+    return pid === projectId;
+  });
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#0f2e2e]">My Work</h1>
-            <p className="text-gray-500 text-sm mt-1">Projects and tasks assigned to you by admin</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm text-center">
-              <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-widest">Projects</span>
-              <span className="text-lg font-bold text-[#0f2e2e]">{projects.length}</span>
-            </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100 shadow-sm text-center">
-              <span className="text-[10px] font-bold text-blue-400 block uppercase tracking-widest">Tasks</span>
-              <span className="text-lg font-bold text-blue-700">{tasks.length}</span>
-            </div>
-          </div>
-        </div>
+  // My tasks — assigned to the logged in user by name match
+  const myTasks = tasks.filter(t =>
+    t.assigneeName?.toLowerCase() === user?.name?.toLowerCase() ||
+    t.assignedTo?.name?.toLowerCase() === user?.name?.toLowerCase()
+  );
 
-        {/* Tabs */}
-        <div className="flex gap-2">
-          {["projects", "tasks"].map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition ${tab === t ? "bg-[#0f2e2e] text-white" : "bg-white text-gray-500 border border-gray-200 hover:bg-gray-50"
-                }`}>
-              {t === "projects" ? `📁 Projects (${projects.length})` : `✅ Tasks (${tasks.length})`}
-            </button>
-          ))}
-        </div>
+  const toggleExpanded = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-emerald-600" size={36} />
-          </div>
-        ) : tab === "projects" ? (
-          projects.length === 0 ? (
-            <div className="py-20 bg-white rounded-[32px] border border-dashed border-gray-200 flex flex-col items-center justify-center text-center p-6">
-              <div className="p-4 bg-gray-50 rounded-full mb-4"><Briefcase className="text-gray-300" size={32} /></div>
-              <h3 className="text-lg font-bold text-[#0f2e2e]">No projects assigned yet</h3>
-              <p className="text-gray-400 text-sm">Contact your admin to get assigned to a project</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((p) => (
-                <div key={p._id} className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-[#0f2e2e] text-white rounded-2xl">
-                      <Briefcase size={20} />
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusColor(p.status)}`}>
-                      {p.status}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-[#0f2e2e] text-base mb-1">{p.title}</h3>
-                  {p.client?.name && <p className="text-xs text-gray-400 mb-1">Client: {p.client.name}</p>}
-                  {p.description && <p className="text-xs text-gray-500 mb-4 line-clamp-2">{p.description}</p>}
+  if (loading) return (
+    <div className="min-h-screen bg-[#f8fafa] flex items-center justify-center">
+      <Loader2 className="animate-spin text-emerald-500" size={36} />
+    </div>
+  );
 
-                  <div className="mt-auto">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Progress</span>
-                      <span className="text-xs font-black text-[#0f2e2e]">{p.progress || 0}%</span>
-                    </div>
-                    <div className="bg-gray-100 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2 rounded-full"
-                        style={{ width: `${p.progress || 0}%` }}></div>
-                    </div>
-                    {(p.startDate || p.endDate) && (
-                      <div className="flex items-center gap-1 mt-3 text-[10px] text-gray-400">
-                        <Calendar size={10} />
-                        {p.startDate && new Date(p.startDate).toLocaleDateString()}
-                        {p.endDate && ` → ${new Date(p.endDate).toLocaleDateString()}`}
-                      </div>
-                    )}
-                    {/* Team members */}
-                    {p.teamMembers?.length > 0 && (
-                      <div className="mt-2 flex -space-x-2">
-                        {p.teamMembers.slice(0, 4).map((m, i) => (
-                          <div key={i} title={m.name}
-                            className="w-6 h-6 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-700 text-[9px] font-black">
-                            {m.name?.charAt(0)}
-                          </div>
-                        ))}
-                        {p.teamMembers.length > 4 && (
-                          <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-gray-500 text-[9px] font-bold">
-                            +{p.teamMembers.length - 4}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        ) : (
-          /* Tasks Tab */
-          tasks.length === 0 ? (
-            <div className="py-20 bg-white rounded-[32px] border border-dashed border-gray-200 flex flex-col items-center justify-center text-center p-6">
-              <div className="p-4 bg-gray-50 rounded-full mb-4"><ListTodo className="text-gray-300" size={32} /></div>
-              <h3 className="text-lg font-bold text-[#0f2e2e]">No tasks assigned yet</h3>
-              <p className="text-gray-400 text-sm">Your admin will assign tasks to you</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {tasks.map(t => (
-                <div key={t._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-[#0f2e2e]">{t.title}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${priorityColor(t.priority)}`}>
-                          {t.priority}
-                        </span>
-                      </div>
-                      {t.project?.title && (
-                        <p className="text-xs text-gray-400 mb-1">📁 Project: {t.project.title}</p>
-                      )}
-                      {t.description && (
-                        <p className="text-xs text-gray-500">{t.description}</p>
-                      )}
-                      {t.dueDate && (
-                        <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                          <Calendar size={10} /> Due: {new Date(t.dueDate).toLocaleDateString("en-IN")}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase shrink-0 ${statusColor(t.status)}`}>
-                      {t.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        )}
+  if (error) return (
+    <div className="min-h-screen bg-[#f8fafa] flex items-center justify-center">
+      <div className="bg-white rounded-[2rem] p-8 text-center border border-red-100">
+        <AlertCircle className="text-red-400 mx-auto mb-3" size={32} />
+        <p className="text-slate-600">{error}</p>
       </div>
     </div>
   );
-};
 
-export default UserProjects;
+  return (
+    <div className="min-h-screen bg-[#f8fafa] p-4 sm:p-6 lg:p-8 pt-20">
+      <div className="max-w-5xl mx-auto space-y-8">
+
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-black text-[#0f2e2e]">My Projects & Tasks</h1>
+          <p className="text-gray-400 text-sm mt-1">Projects you're part of and tasks assigned to you</p>
+        </div>
+
+        {/* My Tasks Summary */}
+        {myTasks.length > 0 && (
+          <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm">
+            <h2 className="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
+              <ListTodo size={18} className="text-purple-500" /> My Assigned Tasks
+              <span className="ml-auto text-[10px] font-black bg-purple-50 text-purple-600 px-3 py-1 rounded-full uppercase">{myTasks.length} tasks</span>
+            </h2>
+            <div className="space-y-2">
+              {myTasks.map(t => (
+                <div key={t._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg whitespace-nowrap ${TASK_STATUS_COLORS[t.status]}`}>{t.status}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-700 truncate">{t.title}</p>
+                    <p className="text-[10px] text-slate-400">{t.project?.title || "—"}</p>
+                  </div>
+                  {t.dueDate && (
+                    <span className="text-[10px] text-slate-400 flex items-center gap-1 whitespace-nowrap">
+                      <Calendar size={10} />{t.dueDate.slice(0, 10)}
+                    </span>
+                  )}
+                  <span className={`text-[10px] font-black ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All Projects */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base font-black text-slate-800">All Projects</h2>
+            <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full uppercase">{projects.length} total</span>
+          </div>
+
+          {projects.length === 0 ? (
+            <div className="bg-white rounded-[2.5rem] p-16 text-center border border-dashed border-slate-200">
+              <Briefcase className="text-slate-200 mx-auto mb-4" size={40} />
+              <h3 className="font-bold text-slate-500">No projects found</h3>
+              <p className="text-slate-400 text-sm mt-1">Projects will appear here once they're created by admin.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {projects.map(p => {
+                const ptasks = tasksForProject(p._id);
+                const doneTasks = ptasks.filter(t => t.status === "Done").length;
+                const isOpen = expanded[p._id];
+                const members = p.teamMembers || [];
+
+                return (
+                  <div key={p._id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                    {/* Project Header */}
+                    <div className="p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="p-2.5 bg-[#0f2e2e] text-white rounded-2xl">
+                              <Briefcase size={18} />
+                            </div>
+                            <div>
+                              <h3 className="font-black text-slate-800 text-lg leading-tight">{p.title}</h3>
+                              {p.clientName && <p className="text-xs text-slate-400">{p.clientName}</p>}
+                            </div>
+                            <span className={`ml-auto sm:ml-0 text-[10px] font-black uppercase px-3 py-1 rounded-full ${STATUS_COLORS[p.status]}`}>{p.status}</span>
+                          </div>
+
+                          {p.description && (
+                            <p className="text-sm text-slate-500 mt-3 leading-relaxed">{p.description}</p>
+                          )}
+
+                          {/* Stats row */}
+                          <div className="flex flex-wrap items-center gap-4 mt-4 text-xs">
+                            {p.budget > 0 && (
+                              <span className="flex items-center gap-1 text-slate-500 font-bold">
+                                <IndianRupee size={11} />{Number(p.budget).toLocaleString("en-IN")}
+                              </span>
+                            )}
+                            {p.startDate && (
+                              <span className="flex items-center gap-1 text-slate-400">
+                                <Calendar size={11} />{p.startDate.slice(0, 10)} → {p.endDate?.slice(0, 10) || "Open"}
+                              </span>
+                            )}
+                            {members.length > 0 && (
+                              <span className="flex items-center gap-1 text-slate-500 font-bold">
+                                <Users size={11} />{members.length} member{members.length !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Team member avatars + names */}
+                          {members.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {members.map((m, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
+                                  <div className="w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center text-[8px] font-black text-emerald-700">
+                                    {(m.name || "?").slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <span className="text-[11px] font-bold text-emerald-700">{m.name || "—"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="mt-4">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] font-black uppercase text-slate-400">Progress</span>
+                          <span className="text-[10px] font-black text-slate-500">{p.progress || 0}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all"
+                            style={{ width: `${p.progress || 0}%` }} />
+                        </div>
+                      </div>
+
+                      {/* Tasks summary + expand button */}
+                      {ptasks.length > 0 && (
+                        <button onClick={() => toggleExpanded(p._id)}
+                          className="mt-4 w-full flex items-center justify-between bg-slate-50 px-4 py-2.5 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition">
+                          <span className="flex items-center gap-2">
+                            <ListTodo size={14} className="text-purple-500" />
+                            {doneTasks}/{ptasks.length} tasks done
+                          </span>
+                          {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Expanded task list */}
+                    {isOpen && ptasks.length > 0 && (
+                      <div className="border-t border-slate-100 px-6 pb-6 pt-4">
+                        <div className="space-y-2">
+                          {ptasks.map(t => (
+                            <div key={t._id} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-50 hover:bg-slate-50 transition">
+                              <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg whitespace-nowrap ${TASK_STATUS_COLORS[t.status]}`}>{t.status}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-700 truncate">{t.title}</p>
+                                {(t.assigneeName || t.assignedTo?.name) && (
+                                  <p className="text-[10px] text-slate-400 mt-0.5">
+                                    👤 {t.assigneeName || t.assignedTo?.name}
+                                    {(t.assigneeName || t.assignedTo?.name)?.toLowerCase() === user?.name?.toLowerCase() && (
+                                      <span className="ml-1 text-emerald-500 font-bold">← You</span>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                              {t.dueDate && <span className="text-[10px] text-slate-400 whitespace-nowrap">{t.dueDate.slice(0, 10)}</span>}
+                              <span className={`text-[10px] font-black ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -14,8 +14,7 @@ import {
   FolderKanban,
   ChevronDown,
   ChevronUp,
-  X,
-  Video,
+  X, Video
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -108,7 +107,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           </Dropdown>
 
           <Dropdown label="Meetings" icon={<Video size={18} />} open={meetingOpen} setOpen={setMeetingOpen}>
-            <SubMenu to="/meetings" label="All Meetings" />
+            <SubMenu to="/meeting" label="All Meetings" />
           </Dropdown>
 
           <Dropdown label="Payroll" icon={<CreditCard size={18} />} open={payrollOpen} setOpen={setPayrollOpen}>
@@ -127,7 +126,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <SubMenu to="/procurement/units" label="Units" />
           </Dropdown>
 
-          <Dropdown label="Project" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
+          <Dropdown label="Project Management" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
             <SubMenu to="/project/client" label="Client" />
             <SubMenu to="/project/project" label="Project" />
             <SubMenu to="/project/tasks" label="Manage Tasks" />
@@ -144,6 +143,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           <Dropdown label="Reports" icon={<FolderKanban size={18} />} open={reportsOpen} setOpen={setReportsOpen}>
             <SubMenu to="/reports/attendance" label="Attendance Report" />
+            <SubMenu to="/reports/leave" label="Leave Report" />
             <SubMenu to="/reports/payroll" label="Payroll Report" />
             <SubMenu to="/reports/adhoc" label="Adhoc Report" />
           </Dropdown>
