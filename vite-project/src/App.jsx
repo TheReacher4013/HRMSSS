@@ -65,6 +65,17 @@ import Notice from "./pages/notice/Notice";
 /* Admin Meeting */
 import MeetingAdmin from "./pages/meeting/MeetingAdmin";
 
+/* Setup Rules */
+import SetupRules from "./pages/setuprules/Setup";
+
+/* Rewards */
+import PointSettings from "./pages/rewards/Pointsetting";
+import PointCategories from "./pages/rewards/Pointcategories";
+import Collaborative from "./pages/rewards/Collaborative";
+import ManagementPoint from "./pages/rewards/Managementpoint";
+import EmployeePoints from "./pages/rewards/Employeepoints";
+import AttendancePoints from "./pages/rewards/Attendancepoint";
+
 // ===== USER =====
 import UserLayout from "./component/User/UserLayout";
 import UserDashboard from "./pages/User/dashboard/UserDashboard";
@@ -77,6 +88,8 @@ import CalendarPage from "./pages/User/calendar/Calendar";
 import UserLoan from "./pages/User/loan/UserLoan";
 import MeetingsPage from "./pages/User/meeting/Meeting";
 import UserHoliday from "./pages/User/holiday/UserHoliday";
+
+
 
 const App = () => {
   const { isLoggedIn, loginType } = useAuth();
@@ -169,6 +182,17 @@ const App = () => {
         {/* Meeting */}
         <Route path="/meeting" element={<MeetingAdmin />} />
 
+        {/* Setup Rules */}
+        <Route path="/setup-rules/setup" element={<SetupRules />} />
+
+        {/* Rewards */}
+        <Route path="/rewards/point-settings" element={<PointSettings />} />
+        <Route path="/rewards/point-categories" element={<PointCategories />} />
+        <Route path="/rewards/collaborative" element={<Collaborative />} />
+        <Route path="/rewards/management-points" element={<ManagementPoint />} />
+        <Route path="/rewards/employee-points" element={<EmployeePoints />} />
+        <Route path="/rewards/attendance-points" element={<AttendancePoints />} />
+
       </Route>
 
       {/* ================= USER ================= */}
@@ -191,6 +215,7 @@ const App = () => {
         <Route path="holidays" element={<UserHoliday />} />
         <Route path="loans" element={<UserLoan />} />
       </Route>
+
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" />} />

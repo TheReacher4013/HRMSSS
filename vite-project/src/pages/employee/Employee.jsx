@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Pencil, Trash2, Plus, Search, Users, Mail, Phone, UserCheck, X, Loader2 } from "lucide-react";
-import { employeeAPI, departmentAPI } from "../../services/api";
+import { Pencil, Trash2, Plus, Search, Users, Phone, X, Loader2 } from "lucide-react";
+import { employeeAPI, departmentAPI, positionAPI } from "../../services/api";
 
 const ENTRIES = [5, 10, 25];
+
+const DEFAULT_POSITIONS = [
+  "Software Engineer", "Senior Engineer", "Team Lead", "Manager",
+  "HR Executive", "HR Manager", "Accountant", "Finance Manager",
+  "Sales Executive", "Sales Manager", "Marketing Executive",
+  "Designer", "Product Manager", "Operations Manager",
+  "Business Analyst", "Data Analyst", "DevOps Engineer",
+  "QA Engineer", "Support Executive", "Intern",
+];
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -18,15 +28,18 @@ const EmployeeList = () => {
   const emptyForm = { name: "", email: "", mobile: "", position: "", salary: "", status: "Active", department: "" };
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
-      const [empRes, deptRes] = await Promise.all([employeeAPI.getAll(), departmentAPI.getAll()]);
-      setEmployees(empRes.data);
-      setDepartments(deptRes.data);
+      const [empRes, deptRes, posRes] = await Promise.allSettled([
+        employeeAPI.getAll(),
+        departmentAPI.getAll(),
+        positionAPI.getAll(),
+      ]);
+      if (empRes.status === "fulfilled") setEmployees(empRes.value.data || []);
+      if (deptRes.status === "fulfilled") setDepartments(deptRes.value.data || []);
+      if (posRes.status === "fulfilled") setPositions(posRes.value.data || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -47,9 +60,13 @@ const EmployeeList = () => {
 
   const handleEdit = (emp) => {
     setForm({
-      name: emp.name, email: emp.email, mobile: emp.mobile || "",
-      position: emp.position || "", salary: emp.salary || "",
-      status: emp.status, department: emp.department?._id || emp.department || "",
+      name: emp.name,
+      email: emp.email,
+      mobile: emp.mobile || "",
+      position: emp.position || "",
+      salary: emp.salary || "",
+      status: emp.status,
+      department: emp.department?._id || emp.department || "",
     });
     setEditId(emp._id); setShowForm(true);
   };
@@ -74,7 +91,7 @@ const EmployeeList = () => {
   }, [employees, search, statusFilter]);
 
   const totalPages = Math.ceil(filtered.length / entries);
-  const paginated = filtered.slice((currentPage-1)*entries, currentPage*entries);
+  const paginated = filtered.slice((currentPage - 1) * entries, currentPage * entries);
 
   const performanceColor = (score) => {
     if (!score && score !== 0) return "bg-gray-100 text-gray-500";
@@ -83,6 +100,13 @@ const EmployeeList = () => {
     if (score >= 40) return "bg-orange-100 text-orange-600";
     return "bg-red-100 text-red-600";
   };
+
+  const inp = "w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200";
+
+  // Position list: use API data if available, else defaults
+  const positionOptions = positions.length > 0
+    ? positions.filter(p => p.status === "Active").map(p => p.name)
+    : DEFAULT_POSITIONS;
 
   return (
     <div className="bg-[#f3f4f6] min-h-screen p-4 md:p-8 pt-24 font-sans">
@@ -94,7 +118,7 @@ const EmployeeList = () => {
               <div className="p-2 bg-indigo-100 rounded-xl"><Users className="text-indigo-600" size={24} /></div>
               Employee Directory
             </h1>
-            <p className="text-slate-500 text-sm mt-1">All employees — including auto-created from user registrations</p>
+            <p className="text-slate-500 text-sm mt-1">Manage all employees</p>
           </div>
           <button onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}
             className="bg-[#0a4d44] hover:bg-slate-800 text-white px-6 py-3 rounded-2xl flex items-center gap-2 font-bold shadow-lg transition">
@@ -109,11 +133,11 @@ const EmployeeList = () => {
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Total</p>
           </div>
           <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
-            <p className="text-2xl font-black text-emerald-700">{employees.filter(e=>e.status==="Active").length}</p>
+            <p className="text-2xl font-black text-emerald-700">{employees.filter(e => e.status === "Active").length}</p>
             <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mt-0.5">Active</p>
           </div>
           <div className="bg-red-50 rounded-2xl p-4 border border-red-100 text-center">
-            <p className="text-2xl font-black text-red-600">{employees.filter(e=>e.status==="Inactive").length}</p>
+            <p className="text-2xl font-black text-red-600">{employees.filter(e => e.status === "Inactive").length}</p>
             <p className="text-xs font-bold text-red-400 uppercase tracking-widest mt-0.5">Inactive</p>
           </div>
         </div>
@@ -129,9 +153,8 @@ const EmployeeList = () => {
           <div className="flex gap-2">
             {["All", "Active", "Inactive"].map(s => (
               <button key={s} onClick={() => { setStatusFilter(s); setCurrentPage(1); }}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition ${
-                  statusFilter === s ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:bg-indigo-50"
-                }`}>{s}</button>
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition ${statusFilter === s ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:bg-indigo-50"
+                  }`}>{s}</button>
             ))}
           </div>
           <select value={entries} onChange={e => setEntries(Number(e.target.value))}
@@ -172,20 +195,17 @@ const EmployeeList = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4 font-black text-indigo-600 text-xs tracking-wider">
-                      {emp.employeeId || "—"}
-                    </td>
+                    <td className="py-4 px-4 font-black text-indigo-600 text-xs tracking-wider">{emp.employeeId || "—"}</td>
                     <td className="py-4 px-4 hidden md:table-cell">
                       <p className="text-xs text-slate-600 flex items-center gap-1"><Phone size={10} />{emp.mobile || "—"}</p>
                     </td>
                     <td className="py-4 px-4 hidden lg:table-cell">
-                      <p className="text-xs text-slate-600">{emp.position || "Employee"}</p>
+                      <p className="text-xs text-slate-600">{emp.position || "—"}</p>
                       {emp.department?.name && <p className="text-[10px] text-slate-400">{emp.department.name}</p>}
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
-                        emp.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
-                      }`}>{emp.status}</span>
+                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${emp.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
+                        }`}>{emp.status}</span>
                     </td>
                     <td className="py-4 px-4 hidden lg:table-cell">
                       <span className={`px-2.5 py-1 rounded-full text-[9px] font-black ${performanceColor(emp.performance?.score)}`}>
@@ -209,13 +229,14 @@ const EmployeeList = () => {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
-                <p className="text-xs text-slate-400">Showing {(currentPage-1)*entries+1}–{Math.min(currentPage*entries, filtered.length)} of {filtered.length}</p>
+                <p className="text-xs text-slate-400">
+                  Showing {(currentPage - 1) * entries + 1}–{Math.min(currentPage * entries, filtered.length)} of {filtered.length}
+                </p>
                 <div className="flex gap-1">
-                  {Array.from({length: totalPages}, (_, i) => i+1).map(p => (
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                     <button key={p} onClick={() => setCurrentPage(p)}
-                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
-                        currentPage === p ? "bg-indigo-600 text-white" : "hover:bg-slate-100 text-slate-600"
-                      }`}>{p}</button>
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${currentPage === p ? "bg-indigo-600 text-white" : "hover:bg-slate-100 text-slate-600"
+                        }`}>{p}</button>
                   ))}
                 </div>
               </div>
@@ -224,7 +245,7 @@ const EmployeeList = () => {
         )}
       </div>
 
-      {/* Form Modal */}
+      {/* ── FORM MODAL ── */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
@@ -233,58 +254,71 @@ const EmployeeList = () => {
               <button onClick={() => setShowForm(false)}><X size={20} /></button>
             </div>
             <div className="space-y-4">
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Full Name *</label>
-                  <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Full Name"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200" />
+                  <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                    placeholder="Full Name" className={inp} />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Email *</label>
-                  <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Email"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200" />
+                  <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                    placeholder="Email" className={inp} />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Mobile</label>
-                  <input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} placeholder="Mobile"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200" />
+                  <input value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })}
+                    placeholder="Mobile" className={inp} />
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Position</label>
-                  <input value={form.position} onChange={e => setForm({...form, position: e.target.value})} placeholder="Position"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Salary</label>
-                  <input type="number" value={form.salary} onChange={e => setForm({...form, salary: e.target.value})} placeholder="Salary"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200" />
+                  <input type="number" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })}
+                    placeholder="Salary" className={inp} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Position</label>
+                  <select value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} className={inp}>
+                    <option value="">-- Select Position --</option>
+                    {positionOptions.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200">
-                    <option>Active</option><option>Inactive</option>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Department</label>
+                  <select value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} className={inp}>
+                    <option value="">-- Select Department --</option>
+                    {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                   </select>
                 </div>
               </div>
+
               <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Department</label>
-                <select value={form.department} onChange={e => setForm({...form, department: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 ring-indigo-200">
-                  <option value="">-- Select Department --</option>
-                  {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Status</label>
+                <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className={inp}>
+                  <option>Active</option>
+                  <option>Inactive</option>
                 </select>
               </div>
+
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 border border-gray-200 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-                <button onClick={handleSave} className="flex-1 bg-[#0a4d44] text-white py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition">
+                <button onClick={() => setShowForm(false)}
+                  className="flex-1 border border-gray-200 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button onClick={handleSave}
+                  className="flex-1 bg-[#0a4d44] text-white py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition">
                   {editId ? "Update" : "Add Employee"}
                 </button>
               </div>
+
             </div>
           </div>
         </div>

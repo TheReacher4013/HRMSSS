@@ -14,7 +14,10 @@ import {
   FolderKanban,
   ChevronDown,
   ChevronUp,
-  X, Video
+  X,
+  Video,
+  Settings,
+  Star,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -49,27 +52,20 @@ const Sidebar = ({ isOpen, onClose }) => {
         text-white shadow-2xl
         transition-transform duration-300
         ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        style={{ height: "calc(100vh - 64px)" }}
       >
 
         <div className="flex justify-between items-center px-5 py-4 border-b border-white/10">
-          <h2 className="text-lg font-bold tracking-wide">
-            BIZZFLY
-          </h2>
-          <X
-            onClick={onClose}
-            className="cursor-pointer hover:text-red-400 transition"
-          />
+          <h2 className="text-lg font-bold tracking-wide">BIZZFLY</h2>
+          <X onClick={onClose} className="cursor-pointer hover:text-red-400 transition" />
         </div>
 
+        <nav
+          className="p-4 space-y-2 text-sm"
+          style={{ overflowY: "auto", height: "calc(100% - 65px)", paddingBottom: "40px" }}
+        >
 
-        <nav className="p-4 space-y-2 text-sm overflow-y-auto h-full">
-
-          <MenuItem
-            to="/dashboard"
-            icon={<Home size={18} />}
-            label="Dashboard"
-            onClose={onClose}
-          />
+          <MenuItem to="/dashboard" icon={<Home size={18} />} label="Dashboard" onClose={onClose} />
 
           <Dropdown label="Attendance" icon={<Users size={18} />} open={attendanceOpen} setOpen={setAttendanceOpen}>
             <SubMenu to="/attendance/form" label="Attendance Form" />
@@ -126,7 +122,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <SubMenu to="/procurement/units" label="Units" />
           </Dropdown>
 
-          <Dropdown label="Project Management" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
+          <Dropdown label="Project" icon={<FolderKanban size={18} />} open={projectOpen} setOpen={setProjectOpen}>
             <SubMenu to="/project/client" label="Client" />
             <SubMenu to="/project/project" label="Project" />
             <SubMenu to="/project/tasks" label="Manage Tasks" />
@@ -148,17 +144,17 @@ const Sidebar = ({ isOpen, onClose }) => {
             <SubMenu to="/reports/adhoc" label="Adhoc Report" />
           </Dropdown>
 
-          <Dropdown label="Reward Points" icon={<Award size={18} />} open={rewardOpen} setOpen={setRewardOpen}>
-            <SubMenu to="/reward/settings" label="Point Settings" />
-            <SubMenu to="/reward/categories" label="Point Categories" />
-            <SubMenu to="/reward/management" label="Management Points" />
-            <SubMenu to="/reward/collaborative" label="Collaborative Points" />
-            <SubMenu to="/reward/attendance" label="Attendance Points" />
-            <SubMenu to="/reward/employee" label="Employee Points" />
+          <Dropdown label="Reward Points" icon={<Star size={18} />} open={rewardOpen} setOpen={setRewardOpen}>
+            <SubMenu to="/rewards/point-settings" label="Point Settings" />
+            <SubMenu to="/rewards/point-categories" label="Point Categories" />
+            <SubMenu to="/rewards/management-points" label="Management Points" />
+            <SubMenu to="/rewards/collaborative" label="Collaborative Points" />
+            <SubMenu to="/rewards/attendance-points" label="Attendance Points" />
+            <SubMenu to="/rewards/employee-points" label="Employee Points" />
           </Dropdown>
 
-          <Dropdown label="Setup Rules" icon={<Building2 size={18} />} open={setupOpen} setOpen={setSetupOpen}>
-            <SubMenu to="/setup/rules" label="Rules" />
+          <Dropdown label="Setup Rules" icon={<Settings size={18} />} open={setupOpen} setOpen={setSetupOpen}>
+            <SubMenu to="/setup-rules/setup" label="Rules" />
           </Dropdown>
 
         </nav>
@@ -170,13 +166,11 @@ const Sidebar = ({ isOpen, onClose }) => {
 export default Sidebar;
 
 
-
 const MenuItem = ({ icon, label, to, onClose }) => (
   <Link
     to={to}
     onClick={onClose}
-    className="flex items-center gap-3 px-4 py-2 rounded-lg
-    hover:bg-white/10 transition duration-200"
+    className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition duration-200"
   >
     {icon}
     <span>{label}</span>
@@ -186,8 +180,7 @@ const MenuItem = ({ icon, label, to, onClose }) => (
 const SubMenu = ({ label, to }) => (
   <Link
     to={to}
-    className="block px-3 py-1 rounded-md text-gray-300
-    hover:text-white hover:bg-white/10 transition"
+    className="block px-3 py-1 rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
   >
     {label}
   </Link>
@@ -197,14 +190,12 @@ const Dropdown = ({ icon, label, open, setOpen, children }) => (
   <div>
     <button
       onClick={() => setOpen(!open)}
-      className="w-full flex justify-between items-center
-      px-4 py-2 rounded-lg hover:bg-white/10 transition"
+      className="w-full flex justify-between items-center px-4 py-2 rounded-lg hover:bg-white/10 transition"
     >
       <div className="flex items-center gap-3">
         {icon}
         <span>{label}</span>
       </div>
-
       {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
     </button>
 
